@@ -27,7 +27,6 @@ python server.py
 ## Features
 
 Provides tools to interact with Weeek:
-- `get_workspaces`: List available workspaces.
 - `get_users`: Get a list of users in the workspace.
 - `get_projects`: List projects.
 - `get_boards`: List boards.

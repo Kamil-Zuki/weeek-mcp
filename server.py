@@ -19,16 +19,7 @@ def get_headers():
         "Authorization": f"Bearer {api_key}"
     }
 
-@mcp.tool()
-async def get_workspaces() -> str:
-    """Get a list of workspaces in Weeek."""
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"{BASE_URL}/workspace",
-            headers=get_headers()
-        )
-        response.raise_for_status()
-        return response.text
+
 
 @mcp.tool()
 async def get_projects() -> str:
