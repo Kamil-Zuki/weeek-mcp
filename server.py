@@ -51,11 +51,24 @@ async def get_tasks(project_id: int = None, board_id: int = None) -> str:
         return response.text
 
 @mcp.tool()
-async def create_task(title: str, project_id: int = None) -> str:
-    """Create a new task in Weeek."""
+async def create_task(
+    title: str, 
+    description: str = None, 
+    project_id: int = None, 
+    board_id: int = None, 
+    board_column_id: int = None
+) -> str:
+    """Create a new task in Weeek. Can optionally specify description, project, board, and column."""
     payload = {"title": title}
+    if description:
+        payload["description"] = description
     if project_id:
         payload["projectId"] = project_id
+    if board_id:
+        payload["boardId"] = board_id
+    if board_column_id:
+        # Note: Weeek API might use 'boardColumnId' or 'columnId'. 
+        payload["boardColumnId"] = board_column_id
         
     async with httpx.AsyncClient() as client:
         response = await client.post(
