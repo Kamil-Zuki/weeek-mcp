@@ -33,12 +33,19 @@ async def get_projects() -> str:
         return response.text
 
 @mcp.tool()
-async def get_tasks() -> str:
-    """Get a list of tasks in Weeek."""
+async def get_tasks(project_id: int = None, board_id: int = None) -> str:
+    """Get a list of tasks in Weeek. Can be filtered by project_id or board_id."""
+    params = {}
+    if project_id:
+        params["projectId"] = project_id
+    if board_id:
+        params["boardId"] = board_id
+        
     async with httpx.AsyncClient() as client:
         response = await client.get(
             f"{BASE_URL}/tm/tasks",
-            headers=get_headers()
+            headers=get_headers(),
+            params=params
         )
         response.raise_for_status()
         return response.text
@@ -101,12 +108,17 @@ async def delete_task(task_id: int) -> str:
         return "Task deleted successfully"
 
 @mcp.tool()
-async def get_boards() -> str:
-    """Get a list of boards in Weeek."""
+async def get_boards(project_id: int = None) -> str:
+    """Get a list of boards in Weeek. Can be filtered by project_id."""
+    params = {}
+    if project_id:
+        params["projectId"] = project_id
+        
     async with httpx.AsyncClient() as client:
         response = await client.get(
             f"{BASE_URL}/tm/boards",
-            headers=get_headers()
+            headers=get_headers(),
+            params=params
         )
         response.raise_for_status()
         return response.text
