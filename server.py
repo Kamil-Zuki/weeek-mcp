@@ -1,6 +1,9 @@
 from mcp.server.fastmcp import FastMCP
 import httpx
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Initialize FastMCP server
 mcp = FastMCP("weeek-mcp")
