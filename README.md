@@ -28,8 +28,13 @@ python server.py
 
 Provides tools to interact with Weeek:
 - `get_workspaces`: List available workspaces.
+- `get_users`: Get a list of users in the workspace.
 - `get_projects`: List projects.
+- `get_boards`: List boards.
 - `get_tasks`: List tasks.
+- `get_task`: Get details of a specific task.
 - `create_task`: Create a new task.
+- `update_task`: Update a specific task.
+- `delete_task`: Delete a specific task.
 
 You can add more tools by referring to the [Weeek API Documentation](https://developers.weeek.net/).

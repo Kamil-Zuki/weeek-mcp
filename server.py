@@ -68,5 +68,68 @@ async def create_task(title: str, project_id: int = None) -> str:
         response.raise_for_status()
         return response.text
 
+@mcp.tool()
+async def get_task(task_id: int) -> str:
+    """Get details of a specific task."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{BASE_URL}/tm/tasks/{task_id}",
+            headers=get_headers()
+        )
+        response.raise_for_status()
+        return response.text
+
+@mcp.tool()
+async def update_task(task_id: int, title: str = None, description: str = None) -> str:
+    """Update a specific task."""
+    payload = {}
+    if title:
+        payload["title"] = title
+    if description:
+        payload["description"] = description
+        
+    async with httpx.AsyncClient() as client:
+        # Many APIs use POST, PATCH or PUT for updates. Usually Weeek uses PUT or PATCH. We'll use PUT/PATCH
+        response = await client.put(
+            f"{BASE_URL}/tm/tasks/{task_id}",
+            headers=get_headers(),
+            json=payload
+        )
+        response.raise_for_status()
+        return response.text
+
+@mcp.tool()
+async def delete_task(task_id: int) -> str:
+    """Delete a specific task."""
+    async with httpx.AsyncClient() as client:
+        response = await client.delete(
+            f"{BASE_URL}/tm/tasks/{task_id}",
+            headers=get_headers()
+        )
+        response.raise_for_status()
+        return "Task deleted successfully"
+
+@mcp.tool()
+async def get_boards() -> str:
+    """Get a list of boards in Weeek."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{BASE_URL}/tm/boards",
+            headers=get_headers()
+        )
+        response.raise_for_status()
+        return response.text
+
+@mcp.tool()
+async def get_users() -> str:
+    """Get a list of users in the workspace."""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{BASE_URL}/workspace/users",
+            headers=get_headers()
+        )
+        response.raise_for_status()
+        return response.text
+
 if __name__ == "__main__":
     mcp.run()
