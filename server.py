@@ -105,21 +105,30 @@ async def search_all_tasks(
 ) -> Dict[str, Any]:
     """
     Deep search for tasks by text across multiple pages or projects.
+    Supports multi-word queries: matches tasks that contain all specified words.
     
     Args:
-        query: String or words to search for in task title or description.
+        query: Search query (can be multiple words like 'Henderson МПК').
         project_id: Optional project ID to limit the search.
         max_results: Maximum matching tasks to return (default 50).
     """
-    query_lower = query.lower()
+    words = [w.strip().lower() for w in query.split() if w.strip()]
+    if not words:
+        return {"query": query, "count": 0, "tasks": []}
+
     matches = []
-    page = 1
+    seen_ids = set()
+    offset = 0
+    limit = 50
+    
+    # Use the longest word for Weeek API server-side search filter
+    primary_keyword = max(words, key=len)
     
     while len(matches) < max_results:
         params: Dict[str, Any] = {
-            "page": page,
-            "perPage": 50,
-            "search": query
+            "offset": offset,
+            "perPage": limit,
+            "search": primary_keyword
         }
         if project_id is not None:
             params["projectId"] = project_id
@@ -132,18 +141,29 @@ async def search_all_tasks(
         if not tasks:
             break
             
+        new_tasks_added = 0
         for t in tasks:
+            tid = t.get("id")
+            if tid in seen_ids:
+                continue
+            seen_ids.add(tid)
+            new_tasks_added += 1
+
             t_title = str(t.get("title", "")).lower()
             t_desc = str(t.get("description", "")).lower()
-            if query_lower in t_title or query_lower in t_desc:
+            full_text = f"{t_title} {t_desc}"
+            
+            # Check that ALL words from query are present in title or description
+            if all(w in full_text for w in words):
                 matches.append(t)
                 if len(matches) >= max_results:
                     break
                     
         has_more = data.get("hasMore", False)
-        if not has_more or len(tasks) < 50:
+        if not has_more or new_tasks_added == 0:
             break
-        page += 1
+            
+        offset += limit
 
     return {
         "query": query,
