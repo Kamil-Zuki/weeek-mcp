@@ -34,8 +34,9 @@ An MCP (Model Context Protocol) server for the [Weeek.net](https://weeek.net/) A
 
 ## Features & Tools
 
-- **`search_all_tasks(query, project_id, max_results)`**: Deep text search across tasks, titles, and descriptions.
-- **`get_tasks(project_id, board_id, page, per_page, search)`**: Get paginated list of tasks with optional board/project/search filters.
+- **`get_tasks_by_assignee(user_query, project_id, is_completed, max_results)`**: Find tasks assigned to a specific person by their name, surname, email, or user ID (e.g. `user_query='Иван'`, `user_query='user@email.com'`).
+- **`search_all_tasks(query, project_id, max_results)`**: Deep text search across tasks, titles, and descriptions with multi-keyword support.
+- **`get_tasks(project_id, board_id, user_id, page, per_page, search)`**: Get paginated list of tasks with optional board/project/user/search filters.
 - **`get_task(task_id)`**: Retrieve full details of a specific task.
 - **`create_task(title, description, project_id, board_id, board_column_id, priority, due_date)`**: Create a task with customizable parameters.
 - **`update_task(task_id, title, description, is_completed, priority, due_date)`**: Update task fields or change completion status.

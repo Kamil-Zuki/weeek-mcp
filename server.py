@@ -70,6 +70,7 @@ async def get_boards(project_id: Optional[int] = None) -> Dict[str, Any]:
 async def get_tasks(
     project_id: Optional[int] = None,
     board_id: Optional[int] = None,
+    user_id: Optional[str] = None,
     page: int = 1,
     per_page: int = 50,
     search: Optional[str] = None
@@ -80,6 +81,7 @@ async def get_tasks(
     Args:
         project_id: Optional ID of the project to filter tasks.
         board_id: Optional ID of the board to filter tasks.
+        user_id: Optional ID of the assigned user/member.
         page: Page number (starts at 1, default 1).
         per_page: Number of tasks per page (default 50, max 100).
         search: Optional search keyword to filter tasks by title/content.
@@ -92,10 +94,116 @@ async def get_tasks(
         params["projectId"] = project_id
     if board_id is not None:
         params["boardId"] = board_id
+    if user_id:
+        params["userId"] = user_id
     if search:
         params["search"] = search
         
     return await make_request("GET", "/tm/tasks", params=params)
+
+@mcp.tool()
+async def get_tasks_by_assignee(
+    user_query: str,
+    project_id: Optional[int] = None,
+    is_completed: Optional[bool] = None,
+    max_results: int = 50
+) -> Dict[str, Any]:
+    """
+    Find tasks assigned to a specific person by their name, surname, email, or user ID.
+    
+    Args:
+        user_query: Name, surname, email or UUID of the person (e.g. 'Радченко', 'Zuko', 'alex@mail.com').
+        project_id: Optional project ID to limit search.
+        is_completed: Filter by completion status (True for completed, False for in-progress, None for all).
+        max_results: Maximum tasks to return (default 50).
+    """
+    # 1. Resolve member from workspace
+    members_data = await make_request("GET", "/ws/members")
+    if members_data.get("error"):
+        return members_data
+        
+    members = members_data.get("members", [])
+    query_norm = user_query.strip().lower()
+    
+    matched_members = []
+    for m in members:
+        uid = str(m.get("id", "")).lower()
+        first_name = str(m.get("firstName", "")).lower()
+        last_name = str(m.get("lastName", "")).lower()
+        email = str(m.get("email", "")).lower()
+        full_name = f"{first_name} {last_name}".strip()
+        
+        if (query_norm == uid or 
+            query_norm in first_name or 
+            query_norm in last_name or 
+            query_norm in full_name or 
+            query_norm in email):
+            matched_members.append(m)
+            
+    if not matched_members:
+        return {
+            "error": False,
+            "message": f"Пользователь '{user_query}' не найден среди участников воркспейса.",
+            "available_members": [
+                f"{m.get('firstName', '')} {m.get('lastName', '')} ({m.get('email', '')}) [id: {m.get('id')}]".strip()
+                for m in members[:15]
+            ],
+            "count": 0,
+            "tasks": []
+        }
+        
+    target_user = matched_members[0]
+    target_id = target_user.get("id")
+    target_name = f"{target_user.get('firstName', '')} {target_user.get('lastName', '')}".strip() or target_user.get("email")
+
+    # 2. Fetch tasks for this user
+    matches = []
+    offset = 0
+    limit = 50
+    
+    while len(matches) < max_results:
+        params: Dict[str, Any] = {
+            "userId": target_id,
+            "offset": offset,
+            "perPage": limit
+        }
+        if project_id is not None:
+            params["projectId"] = project_id
+            
+        data = await make_request("GET", "/tm/tasks", params=params)
+        if data.get("error"):
+            return data
+            
+        tasks = data.get("tasks", data.get("data", []))
+        if not tasks:
+            break
+            
+        for t in tasks:
+            if is_completed is not None and t.get("isCompleted") != is_completed:
+                continue
+            matches.append(t)
+            if len(matches) >= max_results:
+                break
+                
+        has_more = data.get("hasMore", False)
+        if not has_more or len(tasks) < limit:
+            break
+        offset += limit
+
+    return {
+        "user": {
+            "id": target_id,
+            "name": target_name,
+            "email": target_user.get("email")
+        },
+        "count": len(matches),
+        "tasks": matches
+    }
+
+@mcp.tool()
+async def get_users() -> Dict[str, Any]:
+    """Get a list of users/members in the workspace."""
+    return await make_request("GET", "/ws/members")
 
 @mcp.tool()
 async def search_all_tasks(
@@ -252,11 +360,6 @@ async def update_task(
 async def delete_task(task_id: int) -> Dict[str, Any]:
     """Delete a task by ID."""
     return await make_request("DELETE", f"/tm/tasks/{task_id}")
-
-@mcp.tool()
-async def get_users() -> Dict[str, Any]:
-    """Get a list of users in the workspace."""
-    return await make_request("GET", "/workspace/users")
 
 if __name__ == "__main__":
     mcp.run()
