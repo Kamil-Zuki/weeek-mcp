@@ -1,12 +1,12 @@
-from mcp.server.mcpserver import MCPServer
+from mcp.server.fastmcp import FastMCP
 import httpx
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# Initialize MCPServer
-mcp = MCPServer("weeek-mcp")
+# Initialize FastMCP Server
+mcp = FastMCP("weeek-mcp")
 
 # Base URL for Weeek API
 BASE_URL = "https://api.weeek.net/public/v1"
